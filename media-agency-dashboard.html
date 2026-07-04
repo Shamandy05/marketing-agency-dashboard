@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Agency Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f9fafb;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- React -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/react-dom.production.min.js"></script>
+    
+    <!-- Recharts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/recharts.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.0/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
+
+        const MediaAgencyDashboard = () => {
+            const [user, setUser] = useState(null);
+            const [currentPage, setCurrentPage] = useState('login');
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [selectedCampaign, setSelectedCampaign] = useState(null);
+            const [filterPlatform, setFilterPlatform] = useState('all');
+
+            // Users & Permissions
+            const users = {
+                'admin@mediaagency.com': { password: 'admin123', role: 'admin', name: 'مدير النظام', permissions: ['view', 'edit', 'delete', 'manage_users', 'manage_clients'] },
+                'manager@mediaagency.com': { password: 'manager123', role: 'manager', name: 'مدير الحملات', permissions: ['view', 'edit', 'manage_clients'] },
+                'client@example.com': { password: 'client123', role: 'client', name: 'حساب العميل', permissions: ['view'] }
+            };
+
+            // Mock Data
+            const campaigns = [
+                { id: 1, name: 'صيف 2024', platform: 'facebook', budget: 50000, spent: 38500, impressions: 2500000, clicks: 125000, conversions: 3250, roi: 245, status: 'active', startDate: '2024-06-01', endDate: '2024-08-31' },
+                { id: 2, name: 'إطلاق المنتج', platform: 'google', budget: 75000, spent: 62300, impressions: 3800000, clicks: 198000, conversions: 5400, roi: 320, status: 'active', startDate: '2024-07-15', endDate: '2024-09-15' },
+                { id: 3, name: 'الوعي بالعلامة التجارية', platform: 'instagram', budget: 35000, spent: 25600, impressions: 1900000, clicks: 76000, conversions: 1850, roi: 185, status: 'active', startDate: '2024-08-01', endDate: '2024-10-31' },
+                { id: 4, name: 'حملة العطلات', platform: 'tiktok', budget: 45000, spent: 18900, impressions: 4200000, clicks: 156000, conversions: 2100, roi: 295, status: 'planning', startDate: '2024-11-01', endDate: '2024-12-31' },
+                { id: 5, name: 'LinkedIn للشركات', platform: 'linkedin', budget: 60000, spent: 52400, impressions: 820000, clicks: 28000, conversions: 890, roi: 210, status: 'active', startDate: '2024-07-01', endDate: '2024-10-01' }
+            ];
+
+            const dailyData = [
+                { date: 'اليوم 1', impressions: 180000, clicks: 8900, conversions: 234, spend: 2100 },
+                { date: 'اليوم 2', impressions: 220000, clicks: 10400, conversions: 312, spend: 2400 },
+                { date: 'اليوم 3', impressions: 195000, clicks: 9200, conversions: 278, spend: 2200 },
+                { date: 'اليوم 4', impressions: 240000, clicks: 11800, conversions: 356, spend: 2800 },
+                { date: 'اليوم 5', impressions: 210000, clicks: 10100, conversions: 301, spend: 2500 },
+                { date: 'اليوم 6', impressions: 260000, clicks: 12400, conversions: 389, spend: 2950 },
+                { date: 'اليوم 7', impressions: 280000, clicks: 13200, conversions: 412, spend: 3100 }
+            ];
+
+            const platformData = [
+                { name: 'Facebook', value: 35, spend: 45000 },
+                { name: 'Google', value: 28, spend: 52400 },
+                { name: 'Instagram', value: 18, spend: 21200 },
+                { name: 'TikTok', value: 12, spend: 14100 },
+                { name: 'LinkedIn', value: 7, spend: 8200 }
+            ];
+
+            const clients = [
+                { id: 1, name: 'شركة الإلكترونيات', email: 'contact@electronics.sa', campaigns: 2, totalSpent: 95000, status: 'active' },
+                { id: 2, name: 'متجر الملابس', email: 'info@fashion.sa', campaigns: 1, totalSpent: 38500, status: 'active' },
+                { id: 3, name: 'وكالة السفر', email: 'hello@travel.sa', campaigns: 2, totalSpent: 75000, status: 'inactive' }
+            ];
+
+            const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+            const handleLogin = () => {
+                const userData = users[email];
+                if (userData && userData.password === password) {
+                    setUser({ email, ...userData });
+                    setCurrentPage('dashboard');
+                    setEmail('');
+                    setPassword('');
+                } else {
+                    alert('بيانات الدخول غير صحيحة');
+                }
+            };
+
+            const handleLogout = () => {
+                setUser(null);
+                setCurrentPage('login');
+                setSelectedCampaign(null);
+            };
+
+            const hasPermission = (permission) => user && user.permissions.includes(permission);
+
+            if (!user) {
+                return (
+                    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.2)', width: '100%', maxWidth: '400px' }}>
+                            <h1 style={{ textAlign: 'center', marginBottom: '30px', color: '#1f2937' }}>📊 Media Agency</h1>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>البريد الإلكتروني</label>
+                                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', boxSizing: 'border-box' }} />
+                            </div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>كلمة المرور</label>
+                                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #d1d5db', borderRadius: '8px', boxSizing: 'border-box' }} />
+                            </div>
+                            <button onClick={handleLogin} style={{ width: '100%', padding: '12px', background: '#667eea', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>
+                                دخول
+                            </button>
+                            <div style={{ marginTop: '30px', padding: '20px', background: '#f3f4f6', borderRadius: '8px', fontSize: '13px' }}>
+                                <p style={{ margin: '0 0 8px', fontWeight: '600' }}>حسابات تجريبية:</p>
+                                <p style={{ margin: '4px 0' }}>👤 admin@mediaagency.com / admin123</p>
+                                <p style={{ margin: '4px 0' }}>👤 manager@mediaagency.com / manager123</p>
+                                <p style={{ margin: '4px 0' }}>👤 client@example.com / client123</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div style={{ background: '#f9fafb', minHeight: '100vh' }}>
+                    {/* HEADER */}
+                    <header style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '20px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h1 style={{ margin: '0', fontSize: '24px', fontWeight: '700' }}>📊 Media Agency Dashboard</h1>
+                            <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: '14px' }}>مرحباً {user.name}</p>
+                        </div>
+                        <button onClick={handleLogout} style={{ padding: '10px 20px', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                            خروج
+                        </button>
+                    </header>
+
+                    {/* NAVIGATION */}
+                    <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '0 30px', display: 'flex', gap: '30px' }}>
+                        <button onClick={() => { setCurrentPage('dashboard'); setSelectedCampaign(null); }} style={{ padding: '16px 0', border: currentPage === 'dashboard' ? '3px solid #667eea' : 'none', borderBottom: currentPage === 'dashboard' ? '3px solid #667eea' : 'none', background: 'transparent', cursor: 'pointer', fontWeight: currentPage === 'dashboard' ? '600' : '500' }}>
+                            📈 اللوحة الرئيسية
+                        </button>
+                        <button onClick={() => setCurrentPage('campaigns')} style={{ padding: '16px 0', borderBottom: currentPage === 'campaigns' ? '3px solid #667eea' : 'none', background: 'transparent', cursor: 'pointer', fontWeight: currentPage === 'campaigns' ? '600' : '500' }}>
+                            🎯 الحملات
+                        </button>
+                        {hasPermission('manage_clients') && (
+                            <button onClick={() => setCurrentPage('clients')} style={{ padding: '16px 0', borderBottom: currentPage === 'clients' ? '3px solid #667eea' : 'none', background: 'transparent', cursor: 'pointer', fontWeight: currentPage === 'clients' ? '600' : '500' }}>
+                                👥 العملاء
+                            </button>
+                        )}
+                        {user.role === 'admin' && (
+                            <button onClick={() => setCurrentPage('settings')} style={{ padding: '16px 0', borderBottom: currentPage === 'settings' ? '3px solid #667eea' : 'none', background: 'transparent', cursor: 'pointer', fontWeight: currentPage === 'settings' ? '600' : '500' }}>
+                                ⚙️ الإعدادات
+                            </button>
+                        )}
+                    </div>
+
+                    {/* MAIN CONTENT */}
+                    <div style={{ padding: '30px' }}>
+                        {currentPage === 'dashboard' && !selectedCampaign && (
+                            <div>
+                                {/* KPI CARDS */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+                                    <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                        <p style={{ margin: '0 0 10px', color: '#6b7280', fontSize: '14px' }}>💰 إجمالي الإنفاق</p>
+                                        <h3 style={{ margin: '0', fontSize: '28px', fontWeight: '700' }}>268,700 ر.س</h3>
+                                        <p style={{ margin: '8px 0 0', color: '#10b981', fontSize: '13px' }}>↑ 12% هذا الشهر</p>
+                                    </div>
+                                    <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                        <p style={{ margin: '0 0 10px', color: '#6b7280', fontSize: '14px' }}>📊 الانطباعات</p>
+                                        <h3 style={{ margin: '0', fontSize: '28px', fontWeight: '700' }}>14.2M</h3>
+                                        <p style={{ margin: '8px 0 0', color: '#10b981', fontSize: '13px' }}>↑ 8% عن الأسبوع</p>
+                                    </div>
+                                    <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                        <p style={{ margin: '0 0 10px', color: '#6b7280', fontSize: '14px' }}>🔗 النقرات</p>
+                                        <h3 style={{ margin: '0', fontSize: '28px', fontWeight: '700' }}>583.2K</h3>
+                                        <p style={{ margin: '8px 0 0', color: '#10b981', fontSize: '13px' }}>↑ 15% عن الشهر</p>
+                                    </div>
+                                    <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                        <p style={{ margin: '0 0 10px', color: '#6b7280', fontSize: '14px' }}>✅ التحويلات</p>
+                                        <h3 style={{ margin: '0', fontSize: '28px', fontWeight: '700' }}>13.9K</h3>
+                                        <p style={{ margin: '8px 0 0', color: '#10b981', fontSize: '13px' }}>ROI 255%</p>
+                                    </div>
+                                </div>
+
+                                {/* TOP CAMPAIGNS TABLE */}
+                                <div style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                    <h3 style={{ margin: '0 0 20px', fontSize: '16px', fontWeight: '600' }}>أفضل الحملات</h3>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                                        <thead>
+                                            <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                                                <th style={{ textAlign: 'right', padding: '12px', color: '#6b7280', fontWeight: '600' }}>الحملة</th>
+                                                <th style={{ textAlign: 'center', padding: '12px', color: '#6b7280', fontWeight: '600' }}>المنصة</th>
+                                                <th style={{ textAlign: 'center', padding: '12px', color: '#6b7280', fontWeight: '600' }}>الإنفاق</th>
+                                                <th style={{ textAlign: 'center', padding: '12px', color: '#6b7280', fontWeight: '600' }}>ROI</th>
+                                                <th style={{ textAlign: 'center', padding: '12px', color: '#6b7280', fontWeight: '600' }}>الحالة</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {campaigns.map((campaign) => (
+                                                <tr key={campaign.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                                                    <td style={{ padding: '12px', color: '#1f2937', fontWeight: '500' }}>{campaign.name}</td>
+                                                    <td style={{ padding: '12px', textAlign: 'center' }}>{campaign.platform === 'facebook' ? '📘' : campaign.platform === 'google' ? '🔍' : campaign.platform === 'instagram' ? '📷' : campaign.platform === 'tiktok' ? '🎵' : '💼'}</td>
+                                                    <td style={{ padding: '12px', textAlign: 'center', color: '#667eea', fontWeight: '600' }}>{(campaign.spent / 1000).toFixed(1)}K</td>
+                                                    <td style={{ padding: '12px', textAlign: 'center', color: '#10b981', fontWeight: '600' }}>{campaign.roi}%</td>
+                                                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                                                        <span style={{ padding: '4px 12px', background: campaign.status === 'active' ? '#dcfce7' : '#fef3c7', color: campaign.status === 'active' ? '#166534' : '#92400e', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>
+                                                            {campaign.status === 'active' ? '🟢 نشط' : '🟡 قيد'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentPage === 'campaigns' && !selectedCampaign && (
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                    <h2 style={{ margin: '0', fontSize: '22px', fontWeight: '700' }}>إدارة الحملات</h2>
+                                    {hasPermission('edit') && <button style={{ padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>➕ حملة جديدة</button>}
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
+                                    {campaigns.map((campaign) => (
+                                        <div key={campaign.id} onClick={() => setSelectedCampaign(campaign)} style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: 'pointer' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                <h3 style={{ margin: '0', fontSize: '16px', fontWeight: '600' }}>{campaign.name}</h3>
+                                                <span style={{ padding: '4px 12px', background: campaign.status === 'active' ? '#dcfce7' : '#fef3c7', color: campaign.status === 'active' ? '#166534' : '#92400e', borderRadius: '20px', fontSize: '11px', fontWeight: '600' }}>
+                                                    {campaign.status === 'active' ? 'نشط' : 'قيد'}
+                                                </span>
+                                            </div>
+                                            <p style={{ margin: '4px 0', color: '#6b7280', fontSize: '13px' }}>المنصة: {campaign.platform}</p>
+                                            <p style={{ margin: '4px 0', color: '#6b7280', fontSize: '13px' }}>الميزانية: {(campaign.budget / 1000).toFixed(0)}K ر.س</p>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                                                <div>
+                                                    <p style={{ margin: '0 0 4px', color: '#6b7280', fontSize: '12px' }}>الانطباعات</p>
+                                                    <p style={{ margin: '0', fontSize: '14px', fontWeight: '600' }}>{(campaign.impressions / 1000000).toFixed(1)}M</p>
+                                                </div>
+                                                <div>
+                                                    <p style={{ margin: '0 0 4px', color: '#6b7280', fontSize: '12px' }}>ROI</p>
+                                                    <p style={{ margin: '0', fontSize: '14px', fontWeight: '600', color: '#10b981' }}>{campaign.roi}%</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedCampaign && (
+                            <div>
+                                <button onClick={() => setSelectedCampaign(null)} style={{ marginBottom: '20px', padding: '8px 16px', background: '#e5e7eb', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                                    ← العودة
+                                </button>
+                                <div style={{ background: 'white', padding: '30px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                    <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: '700' }}>{selectedCampaign.name}</h2>
+                                    <p style={{ margin: '0', color: '#6b7280' }}>المنصة: {selectedCampaign.platform}</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginTop: '20px' }}>
+                                        <div>
+                                            <p style={{ margin: '0 0 8px', color: '#6b7280', fontSize: '13px' }}>الميزانية</p>
+                                            <h3 style={{ margin: '0', fontSize: '20px', fontWeight: '700' }}>{(selectedCampaign.budget / 1000).toFixed(0)}K ر.س</h3>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: '0 0 8px', color: '#6b7280', fontSize: '13px' }}>المستخدم</p>
+                                            <h3 style={{ margin: '0', fontSize: '20px', fontWeight: '700', color: '#ef4444' }}>{(selectedCampaign.spent / 1000).toFixed(1)}K ر.س</h3>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: '0 0 8px', color: '#6b7280', fontSize: '13px' }}>ROI</p>
+                                            <h3 style={{ margin: '0', fontSize: '20px', fontWeight: '700', color: '#10b981' }}>{selectedCampaign.roi}%</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {currentPage === 'clients' && (
+                            <div>
+                                <h2 style={{ margin: '0 0 20px', fontSize: '22px', fontWeight: '700' }}>إدارة العملاء</h2>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: '20px' }}>
+                                    {clients.map((client) => (
+                                        <div key={client.id} style={{ background: 'white', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                <h3 style={{ margin: '0', fontSize: '16px', fontWeight: '600' }}>{client.name}</h3>
+                                                <span style={{ padding: '4px 12px', background: client.status === 'active' ? '#dcfce7' : '#fee2e2', color: client.status === 'active' ? '#166534' : '#991b1b', borderRadius: '20px', fontSize: '11px', fontWeight: '600' }}>
+                                                    {client.status === 'active' ? '✓ نشط' : 'غير'}
+                                                </span>
+                                            </div>
+                                            <p style={{ margin: '8px 0', color: '#6b7280', fontSize: '13px' }}>📧 {client.email}</p>
+                                            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '6px', marginTop: '12px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                    <span style={{ color: '#6b7280', fontSize: '12px' }}>الحملات</span>
+                                                    <span style={{ fontWeight: '600' }}>{client.campaigns}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ color: '#6b7280', fontSize: '12px' }}>الإنفاق</span>
+                                                    <span style={{ fontWeight: '600', color: '#667eea' }}>{(client.totalSpent / 1000).toFixed(0)}K ر.س</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {currentPage === 'settings' && (
+                            <div>
+                                <h2 style={{ margin: '0 0 20px', fontSize: '22px', fontWeight: '700' }}>الإعدادات والصلاحيات</h2>
+                                <div style={{ background: 'white', padding: '30px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                    <h3 style={{ margin: '0 0 20px', fontSize: '18px', fontWeight: '600' }}>👥 إدارة المستخدمين</h3>
+                                    <div>
+                                        <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '6px', marginBottom: '12px' }}>
+                                            <p style={{ margin: '0 0 4px', fontWeight: '600' }}>مدير النظام</p>
+                                            <p style={{ margin: '0 0 8px', color: '#6b7280', fontSize: '13px' }}>admin@mediaagency.com</p>
+                                            <span style={{ padding: '4px 8px', background: '#fed7aa', color: '#92400e', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>👑 مدير</span>
+                                        </div>
+                                        <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '6px', marginBottom: '12px' }}>
+                                            <p style={{ margin: '0 0 4px', fontWeight: '600' }}>مدير الحملات</p>
+                                            <p style={{ margin: '0 0 8px', color: '#6b7280', fontSize: '13px' }}>manager@mediaagency.com</p>
+                                            <span style={{ padding: '4px 8px', background: '#bfdbfe', color: '#1e40af', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>👔 مدير</span>
+                                        </div>
+                                    </div>
+                                    <h3 style={{ margin: '30px 0 20px', fontSize: '18px', fontWeight: '600' }}>🔗 المنصات المتصلة</h3>
+                                    <div>
+                                        {['📘 Facebook Ads', '🔍 Google Ads', '📷 Instagram', '🎵 TikTok', '💼 LinkedIn'].map((platform, idx) => (
+                                            <div key={idx} style={{ padding: '12px', background: '#f9fafb', borderRadius: '6px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                                                <span>{platform}</span>
+                                                <span style={{ color: '#10b981', fontWeight: '600' }}>✓ متصل</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<MediaAgencyDashboard />, document.getElementById('root'));
+    </script>
+</body>
+</html>
